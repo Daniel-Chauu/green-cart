@@ -51,6 +51,41 @@ namespace GreenCart
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
                     ClockSkew = TimeSpan.Zero
                 };
+
+                options.Events = new JwtBearerEvents
+                {
+                    // 401
+                    OnChallenge = async context =>
+                    {
+                        context.HandleResponse();
+
+                        context.Response.StatusCode =
+                            StatusCodes.Status401Unauthorized;
+
+                        context.Response.ContentType = "application/json";
+
+                        await context.Response.WriteAsJsonAsync(new
+                        {
+                            success = false,
+                            message = "You are not authenticated."
+                        });
+                    },
+
+                    // 403
+                    OnForbidden = async context =>
+                    {
+                        context.Response.StatusCode =
+                            StatusCodes.Status403Forbidden;
+
+                        context.Response.ContentType = "application/json";
+
+                        await context.Response.WriteAsJsonAsync(new
+                        {
+                            success = false,
+                            message = "You do not have permission to access this resource."
+                        });
+                    }
+                };
             });
 
             builder.Services.AddAuthorization();

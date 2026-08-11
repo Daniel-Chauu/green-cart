@@ -1,0 +1,6 @@
+@GreenCart_HostAddress = http://localhost:5078
+
+GET {{GreenCart_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

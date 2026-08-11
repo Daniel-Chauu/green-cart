@@ -1,0 +1,26 @@
+# Visual Studio
+.vs/
+**/.vs/
+
+# Build
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# Rider
+.idea/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,148 @@
+using System.Text;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using GreenCart.Data;
+using GreenCart.Middleware;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.Net.Http.Headers;
+using Microsoft.OpenApi.Models;
+
+namespace GreenCart
+{
+    public class Program
+    {
+        public static async Task Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
+
+            // Add DbContext
+            builder.Services.AddDbContext<AppDbContext>(options =>
+              options.UseSqlServer(builder.Configuration.GetConnectionString("DBConnection")));
+
+            // Register Health Checks with DbContext check
+            builder.Services.AddHealthChecks()
+                .AddDbContextCheck<AppDbContext>("database_health_check");
+
+
+            // JWT Authentication
+            var jwtSettings = builder.Configuration.GetSection("Jwt");
+            var secretKey = jwtSettings["Secret"]
+                ?? throw new InvalidOperationException("JWT Secret is not configured in appsettings.json.");
+
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtSettings["Issuer"],
+                    ValidAudience = jwtSettings["Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
+
+            builder.Services.AddAuthorization();
+
+            // FluentValidation
+            builder.Services.AddFluentValidationAutoValidation();
+            builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+            // Add Framework services
+            builder.Services.AddControllers();
+            builder.Services.AddEndpointsApiExplorer();
+
+            // Swagger with JWT support & OpenAPI documentation
+            builder.Services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "GreenCart API",
+                    Version = "v1",
+                    Description = "API for GreenCart - Organic Herbal Supplement Store"
+                });
+
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "Bearer",
+                    BearerFormat = "JWT",
+                    In = ParameterLocation.Header,
+                    Description = "Enter your JWT token in format: Bearer {token}"
+                });
+
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+            });
+
+            var app = builder.Build();
+
+            app.UseCors("AllowFrontend");
+
+            // Global Exception Handler Middleware (captures all unhandled exceptions)
+            app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+
+            // Logging Middleware (registered BEFORE UseStaticFiles and UseAuthentication to capture request/response body & duration)
+            app.UseMiddleware<LoggingMiddleware>();
+
+          
+
+            // Configure HTTP request pipeline
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
+
+            app.UseHttpsRedirection();
+
+            // Static files with 7-day caching for product images
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                OnPrepareResponse = ctx =>
+                {
+                    var path = ctx.File.Name.ToLowerInvariant();
+                    if (path.EndsWith(".jpg") || path.EndsWith(".jpeg") ||
+                        path.EndsWith(".png") || path.EndsWith(".webp"))
+                    {
+                        ctx.Context.Response.Headers[HeaderNames.CacheControl] =
+                            "public,max-age=604800"; // 7 days
+                    }
+                }
+            });
+
+            // Order matters: Authentication BEFORE Authorization
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            app.MapControllers();
+            app.MapHealthChecks("/health");
+
+            await app.RunAsync();
+        }
+    }
+}

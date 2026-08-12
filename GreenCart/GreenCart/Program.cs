@@ -64,6 +64,8 @@ namespace GreenCart
 
             // Register Business Logic Services (Scoped)
             builder.Services.AddScoped<IProductService, ProductService>();
+            builder.Services.AddScoped<IAddressService, AddressService>();
+
 
             // JWT Authentication
             var jwtSettings = builder.Configuration.GetSection("Jwt");

@@ -62,6 +62,9 @@ namespace GreenCart
             builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("App"));
             builder.Services.AddScoped<IEmailService, EmailService>();
 
+            // Register Business Logic Services (Scoped)
+            builder.Services.AddScoped<IProductService, ProductService>();
+
             // JWT Authentication
             var jwtSettings = builder.Configuration.GetSection("Jwt");
             var secretKey = jwtSettings["Secret"]

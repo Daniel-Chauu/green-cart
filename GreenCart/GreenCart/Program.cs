@@ -1,8 +1,12 @@
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using GreenCart.Configuration;
 using GreenCart.Data;
 using GreenCart.Data.Seeders;
 using GreenCart.Middleware;
+using GreenCart.Repositories;
+using GreenCart.Services;
+using GreenCart.Services.Common;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
@@ -41,6 +45,22 @@ namespace GreenCart
             builder.Services.AddHealthChecks()
                 .AddDbContextCheck<AppDbContext>("database_health_check");
 
+            // Register Data Access Layer (Scoped)
+            builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+            builder.Services.AddScoped<IProductRepository, ProductRepository>();
+            builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+            builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+
+            // Register Auth & User Services (Scoped)
+            builder.Services.AddScoped<ITokenService, TokenService>();
+            builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<IUserService, UserService>();
+
+            // Register Email & Payment Services & Configuration
+            builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+            builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("App"));
+            builder.Services.AddScoped<IEmailService, EmailService>();
 
             // JWT Authentication
             var jwtSettings = builder.Configuration.GetSection("Jwt");

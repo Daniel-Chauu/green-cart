@@ -66,6 +66,7 @@ namespace GreenCart
             builder.Services.AddScoped<IProductService, ProductService>();
             builder.Services.AddScoped<IAddressService, AddressService>();
             builder.Services.AddScoped<ICartService, CartService>();
+            builder.Services.AddScoped<IOrderService, OrderService>();
 
 
 

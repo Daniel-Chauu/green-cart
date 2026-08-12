@@ -1,7 +1,7 @@
-using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using GreenCart.Data;
+using GreenCart.Data.Seeders;
 using GreenCart.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.StaticFiles;
@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
+using System.Text;
 
 namespace GreenCart
 {
@@ -17,6 +18,20 @@ namespace GreenCart
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            // Allow FE access
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFrontend", policy =>
+                {
+                    policy.WithOrigins(
+                        "http://localhost:3000"
+                    )
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+                });
+            });
 
             // Add DbContext
             builder.Services.AddDbContext<AppDbContext>(options =>
@@ -137,6 +152,12 @@ namespace GreenCart
             var app = builder.Build();
 
             app.UseCors("AllowFrontend");
+
+            // Auto Seed Database on Startup
+            using (var scope = app.Services.CreateScope())
+            {
+                await DbInitializer.InitializeAsync(scope.ServiceProvider);
+            }
 
             // Global Exception Handler Middleware (captures all unhandled exceptions)
             app.UseMiddleware<GlobalExceptionHandlerMiddleware>();

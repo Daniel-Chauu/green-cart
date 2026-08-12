@@ -5,7 +5,6 @@ namespace GreenCart.Dtos.Requests.Users
 {
     public class UpdateUserRoleRequest
     {
-        [Required]
         public UserRole NewRole { get; set; }
     }
 }

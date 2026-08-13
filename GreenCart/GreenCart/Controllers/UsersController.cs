@@ -1,11 +1,12 @@
-using System;
-using System.Security.Claims;
-using System.Threading.Tasks;
 using GreenCart.Dtos.Requests.Auth;
 using GreenCart.Dtos.Requests.Users;
+using GreenCart.Dtos.Responses.Auth;
 using GreenCart.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace GreenCart.Controllers
 {
@@ -70,6 +71,14 @@ namespace GreenCart.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin,Staff")]
+        public async Task<ActionResult<IEnumerable<UserProfileResponse>>> GetAllUsers()
+        {
+            var result = await _userService.GetAllUsersAsync();
+            return Ok(result);
         }
 
         [HttpPut("{userId:int}/role")]

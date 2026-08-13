@@ -9,5 +9,6 @@ namespace GreenCart.Services
     {
         Task<AuthResponse> RegisterStaffAsync(RegisterStaffRequest request);
         Task<UserProfileResponse> UpdateUserRoleAsync(int adminUserId, int targetUserId, UserRole newRole);
+        Task<IEnumerable<UserProfileResponse>> GetAllUsersAsync();
     }
 }

@@ -84,6 +84,12 @@ namespace GreenCart.Services
             return MapToUserProfile(targetUser);
         }
 
+        public async Task<IEnumerable<UserProfileResponse>> GetAllUsersAsync()
+        {
+            var users = await _unitOfWork.Users.FindAsync(u => !u.IsDeleted);
+            return users.Select(MapToUserProfile);
+        }
+
         private static UserProfileResponse MapToUserProfile(User user)
         {
             return new UserProfileResponse

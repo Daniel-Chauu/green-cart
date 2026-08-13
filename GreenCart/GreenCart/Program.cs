@@ -60,7 +60,9 @@ namespace GreenCart
             // Register Email & Payment Services & Configuration
             builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
             builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("App"));
+            builder.Services.Configure<VnPaySettings>(builder.Configuration.GetSection("VnPay"));
             builder.Services.AddScoped<IEmailService, EmailService>();
+            builder.Services.AddScoped<IVnPayService, VnPayService>();
 
             // Register Business Logic Services (Scoped)
             builder.Services.AddScoped<IProductService, ProductService>();
@@ -71,9 +73,7 @@ namespace GreenCart
             builder.Services.AddScoped<IDashboardService, DashboardService>();
             builder.Services.AddScoped<IOrderService, OrderService>();
             builder.Services.AddScoped<IReviewService, ReviewService>();
-
-
-
+            builder.Services.AddScoped<IWishlistService, WishlistService>();
 
 
             // JWT Authentication
